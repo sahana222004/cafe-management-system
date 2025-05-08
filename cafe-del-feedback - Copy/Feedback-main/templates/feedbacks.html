@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Feedbacks</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .chart-section {
+            display: none;
+        }
+        .active-section {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <h2 class="text-center mb-4">User Feedback Summary</h2>
+
+    <!-- Buttons -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+        <button class="btn btn-outline-primary" onclick="showSection('summary')">Summary</button>
+        <button class="btn btn-outline-success" onclick="showSection('bar')">Bar Chart</button>
+        <button class="btn btn-outline-warning" onclick="showSection('pie')">Pie Chart</button>
+        <button class="btn btn-outline-dark" onclick="showSection('line')">Line Graph</button>
+        <button class="btn btn-outline-info" onclick="showSection('scatter')">Scatter Plot</button>
+        <button class="btn btn-outline-secondary" onclick="showSection('column')">Column Chart</button>
+        <button class="btn btn-outline-danger" onclick="showSection('heatmap')">Heatmap</button>
+        <button class="btn btn-outline-success" onclick="showSection('treemap')">Treemap</button>
+    </div>
+
+    <!-- Summary Section -->
+    <div id="summary" class="row summary-section active-section">
+        <div class="col-md-4">
+            <div class="card text-bg-primary text-center shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Total Feedbacks</h5>
+                    <p class="fs-4">{{ total_feedback }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-success text-center shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Average Rating</h5>
+                    <p class="fs-4">{{ overall_avg_rating }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-warning text-center shadow">
+                <div class="card-body">
+                    <h5 class="card-title">Top Rated Item</h5>
+                    <p class="fs-5">{{ top_item }} ({{ top_item_rating }})</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Sections -->
+    <div id="bar" class="chart-section mt-5"><h5 class="text-center">Bar Chart</h5><canvas id="barChart"></canvas></div>
+    <div id="pie" class="chart-section mt-5"><h5 class="text-center">Pie Chart</h5><canvas id="pieChart"></canvas></div>
+    <div id="line" class="chart-section mt-5"><h5 class="text-center">Line Graph</h5><canvas id="lineChart"></canvas></div>
+    <div id="scatter" class="chart-section mt-5"><h5 class="text-center">Scatter Plot</h5><canvas id="scatterChart"></canvas></div>
+    <div id="column" class="chart-section mt-5"><h5 class="text-center">Column Chart</h5><canvas id="columnChart"></canvas></div>
+    <div id="heatmap" class="chart-section mt-5"><h5 class="text-center">Heatmap</h5><div id="heatmapChart"></div></div>
+    <div id="treemap" class="chart-section mt-5"><h5 class="text-center">Treemap</h5><div id="treemapChart"></div></div>
+
+    <!-- Feedback Table -->
+    <div class="mt-5">
+        <h4 class="text-center mb-3">User Feedback Table</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped shadow">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Item</th>
+                        <th>Rating</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in feedbacks %}
+                    <tr>
+                        <td>{{ f[0] }}</td>
+                        <td>{{ f[1] }}</td>
+                        <td>{{ f[2] }}</td>
+                        <td>{{ f[3] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- JS Charts -->
+<script>
+    function showSection(id) {
+        document.querySelectorAll('.summary-section, .chart-section').forEach(section => {
+            section.classList.remove('active-section');
+        });
+        document.getElementById(id).classList.add('active-section');
+    }
+
+    const items = {{ avg_ratings | map(attribute=0) | list | tojson }};
+    const ratings = {{ avg_ratings | map(attribute=1) | list | tojson }};
+
+    // Bar Chart
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: items,
+            datasets: [{
+                label: 'Average Rating',
+                data: ratings,
+                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        }
+    });
+
+    // Pie Chart
+    new Chart(document.getElementById('pieChart'), {
+        type: 'pie',
+        data: {
+            labels: items,
+            datasets: [{
+                label: 'Rating Share',
+                data: ratings,
+                backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#00d084', '#ff8c00']
+            }]
+        }
+    });
+
+    // Line Graph
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+            labels: items,
+            datasets: [{
+                label: 'Rating Trend',
+                data: ratings,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0,123,255,0.2)',
+                fill: true
+            }]
+        }
+    });
+
+    // Scatter Plot
+    new Chart(document.getElementById('scatterChart'), {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Item Ratings',
+                data: items.map((item, i) => ({ x: i + 1, y: ratings[i] })),
+                backgroundColor: 'rgba(255, 99, 132, 0.7)'
+            }]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Item Index' }},
+                y: { title: { display: true, text: 'Rating' }}
+            }
+        }
+    });
+
+    // Column Chart (same as bar but vertical)
+    new Chart(document.getElementById('columnChart'), {
+        type: 'bar',
+        data: {
+            labels: items,
+            datasets: [{
+                label: 'Column Chart Ratings',
+                data: ratings,
+                backgroundColor: 'rgba(255, 206, 86, 0.6)'
+            }]
+        },
+        options: {
+            indexAxis: 'y'
+        }
+    });
+
+    // Heatmap using Plotly
+    const heatmapData = [{
+        z: [ratings],
+        x: items,
+        y: ['Rating'],
+        type: 'heatmap',
+        colorscale: 'YlGnBu'
+    }];
+    Plotly.newPlot('heatmapChart', heatmapData);
+
+    // Treemap using Plotly
+    const treemapData = [{
+        type: "treemap",
+        labels: items,
+        parents: Array(items.length).fill(""),
+        values: ratings
+    }];
+    Plotly.newPlot('treemapChart', treemapData);
+</script>
+
+</body>
+</html>
